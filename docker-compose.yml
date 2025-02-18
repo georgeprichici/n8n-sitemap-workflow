@@ -1,0 +1,88 @@
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: nginx-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"  
+      - "5678:5678"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx/certs:/etc/nginx/certs:ro
+      - nginx_cache:/var/cache/nginx
+      - nginx_run:/var/run
+    depends_on:
+      - n8n
+      - crawl4ai
+    networks:
+      - n8n-network
+  n8n:
+    container_name: n8n-workflow
+    image: n8nio/n8n
+    restart: unless-stopped
+    user: node
+    # ports:
+    #   - "5678:5678"
+    environment:
+      - N8N_HOST=${N8N_HOST:-localhost}
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=${N8N_PROTOCOL:-http}
+      - N8N_USER_FOLDER=/home/node/.n8n
+      # Supabase PostgreSQL connection
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=${SUPABASE_DB_HOST}
+      - DB_POSTGRESDB_DATABASE=${SUPABASE_DB_NAME}
+      - DB_POSTGRESDB_USER=${SUPABASE_DB_USER}
+      - DB_POSTGRESDB_PASSWORD=${SUPABASE_DB_PASSWORD}
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_SSL_REJECT_UNAUTHORIZED=true
+      - DB_POSTGRESDB_SSL_MODE=require
+      - DB_POSTGRESDB_GSS_ENC_MODE=disable
+      - DB_POSTGRESDB_AUTH_METHOD=password
+      - DB_POSTGRESDB_POOL_MODE=session
+      - N8N_SECURE_COOKIE=false
+      - OLLAMA_HOST=http://host.docker.internal:11434  # For Mac/Windows
+      # OR
+      # - OLLAMA_HOST=http://172.17.0.1:11434  # For Linux
+    volumes:
+      - ./n8n_data:/home/node/.n8n
+    extra_hosts:
+      - "crawl4ai:172.20.0.10"
+      - "host.docker.internal:host-gateway"  # Required for Linux
+    networks:
+      - n8n-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5678/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  crawl4ai:
+    container_name: crawl4ai
+    image: unclecode/crawl4ai:basic
+    restart: unless-stopped
+    environment:
+      - CRAWL4AI_API_TOKEN=${CRAWL4AI_API_TOKEN}
+    # ports:
+    #   - "11235:11235"
+    networks:
+      n8n-network:    
+        ipv4_address: 172.20.0.10
+        
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11235/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  n8n-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  nginx_cache:
+  nginx_run:
