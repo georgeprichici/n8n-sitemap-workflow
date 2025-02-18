@@ -1,0 +1,543 @@
+{
+  "name": "Sitemap To Supabase",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "cdcca6bd-26cb-4614-bc93-e8093d3f38df",
+      "name": "When clicking ‘Test workflow’",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1680,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.loc }}",
+        "options": {}
+      },
+      "id": "41e7c03b-da72-436f-83d6-8101e7b625b7",
+      "name": "HTTP Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1000,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "4adf38c4-e9c4-49c4-a7cc-7c71a07b17d7",
+      "name": "XML",
+      "type": "n8n-nodes-base.xml",
+      "typeVersion": 1,
+      "position": [
+        -820,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "urlset.url",
+        "options": {}
+      },
+      "id": "d66fb192-0f1b-4024-9ffa-6f858406981c",
+      "name": "Split Out",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -620,
+        -100
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "b5e0afff-20f2-48d7-b1fd-70f5fbef0ccf",
+      "name": "Wait",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        100,
+        160
+      ],
+      "webhookId": "9af87c5e-b07f-48dc-9ca8-61b471a24cad"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://crawl4ai:11235/crawl",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "urls",
+              "value": "={{ $json.loc }}"
+            },
+            {
+              "name": "priority",
+              "value": "10"
+            }
+          ]
+        },
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "id": "cd2b4536-c5bb-40cb-a5ae-9ebc65607742",
+      "name": "HTTP Request1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -160,
+        160
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HSpLnELZBTm4ibMD",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=http://crawl4ai:11235/task/{{ $json.task_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 5000
+        }
+      },
+      "id": "786eea4f-05b2-48a1-80c6-462905735c25",
+      "name": "HTTP Request2",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        320,
+        160
+      ],
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HSpLnELZBTm4ibMD",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "9d90c1ce-590e-40a5-ae8c-d92326032975",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "completed",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "b4b587d3-70fa-49e9-bea9-1a1a7116755b",
+      "name": "If",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        540,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "jsonMode": "expressionData",
+        "jsonData": "={{ $json.result.markdown }}",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "page",
+                "value": "={{ $json.result.url }}"
+              },
+              {
+                "name": "orgid"
+              }
+            ]
+          }
+        }
+      },
+      "id": "756afb64-bda5-46b5-8003-9cd01cefed8e",
+      "name": "Default Data Loader",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [
+        900,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "chunkSize": 5000,
+        "chunkOverlap": 300
+      },
+      "id": "bca504b3-7adb-4c4f-ace3-3feb586ca5c4",
+      "name": "Character Text Splitter",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        900,
+        700
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f2bcdb54-e1fe-4670-99aa-6eec973bf5f1",
+              "name": "task_id",
+              "value": "={{ $('HTTP Request1').item.json.task_id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "69f6fd75-7e00-40a1-93b3-ee3dbc7fa811",
+      "name": "Edit Fields",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        540,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "options": {
+          "queryName": "match_documents"
+        }
+      },
+      "id": "c9aeb88f-1d9d-482b-9951-b47a410fcf9a",
+      "name": "Supabase Vector Store",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1,
+      "position": [
+        840,
+        140
+      ],
+      "notesInFlow": false,
+      "executeOnce": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "tDlN6eQVyUBFmAwm",
+          "name": "Supabase Service Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "=deepseek-r1:7b"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        760,
+        480
+      ],
+      "id": "18e5cc11-5f97-4c2c-a121-6e2e6172a11d",
+      "name": "Embeddings Ollama1",
+      "notesInFlow": true,
+      "credentials": {
+        "ollamaApi": {
+          "id": "wMMVeWMnvYYlm7UT",
+          "name": "Ollama account"
+        }
+      },
+      "notes": "Deepseek-r1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b31a4d9b-5bb9-4fcf-8382-e65b3959b02e",
+              "name": "loc",
+              "value": "https://www.apple.com/sitemap.xml",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1360,
+        -100
+      ],
+      "id": "1bd50c5b-8570-4097-93fe-062de2ade5cd",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -340,
+        -100
+      ],
+      "id": "2421e460-0a92-4b31-a842-b3227108a05d",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "loc"
+            },
+            {
+              "name": "title"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1360,
+        160
+      ],
+      "id": "fa7fa433-fe23-4f0b-966f-59431c6a83e0",
+      "name": "When Executed by Another Workflow"
+    }
+  ],
+  "pinData": {
+    "When clicking ‘Test workflow’": [
+      {
+        "json": {}
+      }
+    ]
+  },
+  "connections": {
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "XML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "XML": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request2": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Ollama1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "72446975-22e2-4cc3-ac60-5b3584f060d9",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "758584c41143bf078ee0b04ced934059439dc78f8152e22a93d5a87464d3a353"
+  },
+  "id": "vizvNZMZevqqTctR",
+  "tags": []
+}
